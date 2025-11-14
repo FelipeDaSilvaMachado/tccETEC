@@ -1,8 +1,7 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
 import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA21n9vM9N7eOh8OslR9wm5D108Ca2SFJs",
@@ -16,8 +15,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 {/* Fazendo a autenticacao do banco com os dados de login e senha */ }
 const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
-  // const auth = getAuth(app);
+  persistence: getReactNativePersistence(AsyncStorage)
 });
 {/* puxando os dados do perfil do banco */ }
 const db = getFirestore(app);
