@@ -6,65 +6,70 @@ import { auth, db } from '../firebase/Firebase';
 import { styles } from './Style';
 
 export default function CadastroEngenheiro({ navigation }) {
-    const [formEngenheiro, setFormEngenheiro] = useState({
-        nome: '',
-        email: '',
-        senha: '',
-        telefone: '',
-        crea: '',
-        cnpj: '',
-    });
+    const [nome, setNome] = useState('');
+    const [email, setEmail] = useState('');
+    const [senha, setSenha] = useState('');
+    const [telefone, setTelefone] = useState('');
+    const [crea, setCrea] = useState('');
+    const [cnpj, setCnpj] = useState('');
+
+    const mascararDados = (dado) => {
+        const str = String(dado).trim();
+        const len = str.length;
+        if (len <= 4) {        
+            return str;
+        }
+        const inicio = str.substring(0, 2);
+        const fim = str.substring(len - 2);
+        const meioMascarado = '*'.repeat(len - 4);
+        return inicio + meioMascarado + fim;
+    };
 
     const handleCadastro = async () => {
         try {
-            const credencialUsuario = await createUserWithEmailAndPassword(auth, formEngenheiro.email, formEngenheiro.senha);
+            const credencialUsuario = await createUserWithEmailAndPassword(auth, email, senha);
             const { user } = credencialUsuario;
-            setDoc(doc(db, 'users', user.id), formEngenheiro);
-
+            const creaMascarado = mascararDados(crea);
+            const cnpjMascarado = mascararDados(cnpj);
+            await setDoc(doc(db, 'users', user.id), {
+                nome: nome,
+                crea: creaMascarado,
+                cnpj: cnpjMascarado,
+            });
             Alert.alert(
                 'Sucesso',
                 'Usuário cadastrado com sucesso!',
                 [
                     {
                         text: 'OK',
-                        onPress: () => navigation.replace('Login')
+                        onPress: () => navigation.replace('LoginEngenheiro')
                     }
                 ],
                 { cancelable: false }
             );
         } catch (err) {
-            // 1. Loga o erro completo para debug
             console.log("Erro completo:", err);
-
-            // 2. Tenta pegar a mensagem do erro. Se não tiver, usa a mensagem genérica.
             let mensagemDeErro = 'Não foi possível cadastrar, tente novamente!';
-
-            // Se o erro for um objeto e tiver uma mensagem, usamos ela.
-            if (err && err.message) {
-                mensagemDeErro = err.message;
-            }
-            // Se for um erro do Firebase, podemos traduzir (opcional, mas bom)
-            else if (err && err.code) {
+            if (err && err.code) {
                 switch (err.code) {
-                    case 'auth/email-already-in-use':
-                        mensagemDeErro = 'Este e-mail já está em uso. Tente outro.';
+                    case 'auth/invalid-email':
+                        mensagemDeErro = 'Formato de e-mail inválido.';
                         break;
-                    // ... outros casos
+                    case 'auth/email-already-in-use':
+                        mensagemDeErro = 'Este e-mail já está em uso.';
+                        break;
+                    case 'auth/weak-password':
+                        mensagemDeErro = 'A senha deve ter pelo menos 6 caracteres.';
+                        break;
                     default:
                         mensagemDeErro = `Erro: ${err.code}`;
                         break;
                 }
+            } else if (err && err.message) {
+                mensagemDeErro = err.message;
             }
-
             Alert.alert('Erro', mensagemDeErro);
         }
-    };
-
-    const handleInputChange = (nomeDoCampo, novoValor) => {
-        setFormEngenheiro({
-            ...formEngenheiro,
-            [nomeDoCampo]: novoValor,
-        });
     };
 
     return (
@@ -72,39 +77,40 @@ export default function CadastroEngenheiro({ navigation }) {
             <TextInput
                 style={styles.input}
                 placeholder="Nome Completo"
-                value={String(formEngenheiro.nome || '')}
-                onChangeText={(value) => handleInputChange('nome', value)}
+                value={nome}
+                onChangeText={setNome}
             />
             <TextInput
                 style={styles.input}
                 placeholder="Email"
-                value={String(formEngenheiro.email || '')}
-                onChangeText={(value) => handleInputChange('email', value)}
+                value={email}
+                onChangeText={setEmail}
             />
             <TextInput
                 style={styles.input}
                 placeholder="Senha"
-                value={String(formEngenheiro.senha || '')}
-                onChangeText={(value) => handleInputChange('senha', value)}
+                value={senha}
+                onChangeText={setSenha}
             />
             <TextInput
                 style={styles.input}
                 placeholder="Telefone"
                 keyboardType="numeric"
-                value={String(formEngenheiro.telefone || '')}
-                onChangeText={(value) => handleInputChange('telefone', value)}
+                value={telefone}
+                onChangeText={setTelefone}
             />
             <TextInput
                 style={styles.input}
                 placeholder="CREA"
-                value={String(formEngenheiro.crea || '')}
-                onChangeText={(value) => handleInputChange('crea', value)}
+                value={crea}
+                onChangeText={setCrea}
             />
             <TextInput
                 style={styles.input}
                 placeholder="CNPJ"
-                value={String(formEngenheiro.cnpj || '')}
-                onChangeText={(value) => handleInputChange('cnpj', value)}
+                keyboardType="numeric"
+                value={cnpj}
+                onChangeText={setCnpj}
             />
             <TouchableOpacity
                 style={styles.button}
