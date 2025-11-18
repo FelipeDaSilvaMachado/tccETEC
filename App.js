@@ -13,7 +13,7 @@ export default function Rotas() {
       <Stack.Navigator initialRouteName="SplashScreen" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="SplashScreen" component={SplashScreen}/>
         <Stack.Screen name="CadastroEngenheiro" component={CadastroEngenheiro} options={{ title: 'Cadastrar' }} />
-        <Stack.Screen name="Login" component={LoginEngenheiro} options={{ title: 'Login' }} />
+        <Stack.Screen name="LoginEngenheiro" component={LoginEngenheiro} options={{ title: 'Login' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

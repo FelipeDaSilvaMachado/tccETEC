@@ -4,6 +4,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from '../firebase/Firebase';
 import { styles } from './Style';
+import { LoginEngenheiro } from '../componentes/LoginEngenheiro';
 
 export default function CadastroEngenheiro({ navigation }) {
     const [nome, setNome] = useState('');
@@ -12,11 +13,16 @@ export default function CadastroEngenheiro({ navigation }) {
     const [telefone, setTelefone] = useState('');
     const [crea, setCrea] = useState('');
     const [cnpj, setCnpj] = useState('');
+    const [carregando, setCarregando] = useState(false);
 
     const mascararDados = (dado) => {
+        if (!dado) {
+            return ''; // Proteção contra dados vazios
+        }
+
         const str = String(dado).trim();
         const len = str.length;
-        if (len <= 4) {        
+        if (len <= 4) {
             return str;
         }
         const inicio = str.substring(0, 2);
@@ -25,31 +31,73 @@ export default function CadastroEngenheiro({ navigation }) {
         return inicio + meioMascarado + fim;
     };
 
+    const validarCampos = () => {
+        if (!nome || !email || !senha || !telefone || !crea || !cnpj) {
+            Alert.alert('Atenção', 'Preencha todos os campos!');
+            return false;
+        }
+
+        // Validação segura do email
+        if (typeof email != 'string' || email.indexOf('@') === -1) {
+            Alert.alert('Atenção', 'Digite um email válido!');
+            return false;
+        }
+
+        if (senha.length < 6) {
+            Alert.alert('Atenção', 'A senha deve ter pelo menos 6 caracteres!');
+            return false;
+        }
+
+        return true;
+    };
+
     const handleCadastro = async () => {
+        if (carregando) {
+            return;
+        }
+
+        if (!validarCampos()) {
+            return;
+        }
+
+        setCarregando(true);
+
         try {
             const credencialUsuario = await createUserWithEmailAndPassword(auth, email, senha);
             const { user } = credencialUsuario;
             const creaMascarado = mascararDados(crea);
             const cnpjMascarado = mascararDados(cnpj);
-            await setDoc(doc(db, 'users', user.id), {
+
+            await setDoc(doc(db, 'users', user.uid), {
                 nome: nome,
+                email: email,
+                telefone: telefone, // Adicionei o telefone que estava faltando
                 crea: creaMascarado,
                 cnpj: cnpjMascarado,
+                dataCriacao: new Date(), // Boa prática adicionar timestamp
+                uid: user.uid, // Referência ao ID do usuário
             });
+
+            console.log('Usuário cadastrado com sucesso no Firestore!');
+
             Alert.alert(
                 'Sucesso',
                 'Usuário cadastrado com sucesso!',
                 [
                     {
                         text: 'OK',
-                        onPress: () => navigation.replace('LoginEngenheiro')
-                    }
+                        onPress: () => {
+                            navigation.replace('LoginEngenheiro');
+                        },
+                    },
                 ],
+
                 { cancelable: false }
             );
         } catch (err) {
             console.log("Erro completo:", err);
             let mensagemDeErro = 'Não foi possível cadastrar, tente novamente!';
+
             if (err && err.code) {
                 switch (err.code) {
                     case 'auth/invalid-email':
@@ -61,6 +109,9 @@ export default function CadastroEngenheiro({ navigation }) {
                     case 'auth/weak-password':
                         mensagemDeErro = 'A senha deve ter pelo menos 6 caracteres.';
                         break;
+                    case 'auth/network-request-failed':
+                        mensagemDeErro = 'Erro de conexão. Verifique sua internet.';
+                        break;
                     default:
                         mensagemDeErro = `Erro: ${err.code}`;
                         break;
@@ -68,7 +119,10 @@ export default function CadastroEngenheiro({ navigation }) {
             } else if (err && err.message) {
                 mensagemDeErro = err.message;
             }
+
             Alert.alert('Erro', mensagemDeErro);
+        } finally {
+            setCarregando(false);
         }
     };
 
@@ -79,23 +133,28 @@ export default function CadastroEngenheiro({ navigation }) {
                 placeholder="Nome Completo"
                 value={nome}
                 onChangeText={setNome}
+                autoCapitalize="words"
             />
             <TextInput
                 style={styles.input}
                 placeholder="Email"
                 value={email}
                 onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
             />
             <TextInput
                 style={styles.input}
                 placeholder="Senha"
                 value={senha}
                 onChangeText={setSenha}
+                secureTextEntry
+                autoCapitalize="none"
             />
             <TextInput
                 style={styles.input}
                 placeholder="Telefone"
-                keyboardType="numeric"
+                keyboardType="phone-pad"
                 value={telefone}
                 onChangeText={setTelefone}
             />
@@ -104,6 +163,7 @@ export default function CadastroEngenheiro({ navigation }) {
                 placeholder="CREA"
                 value={crea}
                 onChangeText={setCrea}
+                autoCapitalize="none"
             />
             <TextInput
                 style={styles.input}
@@ -113,13 +173,12 @@ export default function CadastroEngenheiro({ navigation }) {
                 onChangeText={setCnpj}
             />
             <TouchableOpacity
-                style={styles.button}
+                style={[styles.button, carregando && styles.buttonDisabled]}
                 onPress={handleCadastro}
+                disabled={carregando}
             >
-                <Text
-                    style={styles.buttonText}
-                >
-                    Cadastrar
+                <Text style={styles.buttonText}>
+                    {carregando ? 'Cadastrando...' : 'Cadastrar'}
                 </Text>
             </TouchableOpacity>
         </View>

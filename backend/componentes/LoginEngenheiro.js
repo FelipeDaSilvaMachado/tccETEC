@@ -3,7 +3,7 @@ import { View, Alert, Text, TextInput, Button, StyleSheet } from "react-native";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase/Firebase';
 
-export default function Login({ navigation }) {
+export default function LoginEngenheiro({ navigation }) {
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const [erro, setErro] = useState('');
@@ -12,6 +12,21 @@ export default function Login({ navigation }) {
         try {
             await signInWithEmailAndPassword(auth, email, senha);
             navigation.replace('Dashboard');
+
+            Alert.alert(
+                'Sucesso',
+                'Usuário logado com sucesso!',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => {
+                            navigation.replace('Dashboard');
+                        },
+                    },
+                ],
+
+                { cancelable: false }
+            );
         } catch (err) {
             console.log('Erro de login', err.message);
             setErro('Erro ao fazer login. Verifique os dados inseridos!');
